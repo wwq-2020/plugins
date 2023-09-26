@@ -32,8 +32,9 @@ type Net struct {
 	IPAM          *IPAMConfig `json:"ipam"`
 	RuntimeConfig struct {
 		// The capability arg
-		IPRanges []RangeSet `json:"ipRanges,omitempty"`
-		IPs      []*ip.IP   `json:"ips,omitempty"`
+		IPRanges    []RangeSet        `json:"ipRanges,omitempty"`
+		IPs         []*ip.IP          `json:"ips,omitempty"`
+		Annotations map[string]string `json:"io.kubernetes.cri.pod-annotations,omitempty"`
 	} `json:"runtimeConfig,omitempty"`
 	Args *struct {
 		A *IPAMArgs `json:"cni"`
@@ -45,13 +46,14 @@ type Net struct {
 // range directly, and wish to preserve backwards compatibility
 type IPAMConfig struct {
 	*Range
-	Name       string
-	Type       string         `json:"type"`
-	Routes     []*types.Route `json:"routes"`
-	DataDir    string         `json:"dataDir"`
-	ResolvConf string         `json:"resolvConf"`
-	Ranges     []RangeSet     `json:"ranges"`
-	IPArgs     []net.IP       `json:"-"` // Requested IPs from CNI_ARGS, args and capabilities
+	Name           string
+	Type           string            `json:"type"`
+	Routes         []*types.Route    `json:"routes"`
+	DataDir        string            `json:"dataDir"`
+	ResolvConf     string            `json:"resolvConf"`
+	Ranges         []RangeSet        `json:"ranges"`
+	IPArgs         []net.IP          `json:"-"` // Requested IPs from CNI_ARGS, args and capabilities
+	PodAnnotations map[string]string `json:"-"`
 }
 
 type IPAMEnvArgs struct {
@@ -82,6 +84,7 @@ func LoadIPAMConfig(bytes []byte, envArgs string) (*IPAMConfig, string, error) {
 	if n.IPAM == nil {
 		return nil, "", fmt.Errorf("IPAM config missing 'ipam' key")
 	}
+	n.IPAM.PodAnnotations = n.RuntimeConfig.Annotations
 
 	// parse custom IP from env args
 	if envArgs != "" {
